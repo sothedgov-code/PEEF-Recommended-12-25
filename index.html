@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PEEF Recommended Applications 2012-2025</title>
+
+<style>
+  :root{
+    --bg:#e9edf3;
+    --light:#ffffff;
+    --dark:#cfd6e2;
+    --primary:#4a5bdc;
+    --text:#2f3445;
+  }
+
+  body{
+    font-family:"Segoe UI", Tahoma, sans-serif;
+    font-size:13px;
+    background:var(--bg);
+    margin:0;
+    padding:25px;
+    color:var(--text);
+  }
+
+  h2{
+    text-align:center;
+    margin-bottom:18px;
+    color:var(--primary);
+    letter-spacing:.4px;
+  }
+
+  input{
+    width:50%;
+    padding:12px 14px;
+    margin:0 auto 20px;
+    display:block;
+    border:none;
+    border-radius:14px;
+    background:var(--bg);
+    outline:none;
+    box-shadow:
+      inset 4px 4px 8px var(--dark),
+      inset -4px -4px 8px var(--light);
+  }
+
+  table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    display:none;
+    background:var(--bg);
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:
+      8px 8px 18px var(--dark),
+      -8px -8px 18px var(--light);
+  }
+
+  th, td{
+    padding:9px 6px;
+    text-align:center;
+  }
+
+  th{
+    font-weight:600;
+    color:var(--primary);
+  }
+
+  tbody tr:hover td{
+    background:#eef1f8;
+  }
+
+  #suggestions{
+    position:absolute;
+    width:50%;
+    margin-left:25%;
+    background:var(--bg);
+    border-radius:14px;
+    display:none;
+    z-index:9999;
+    box-shadow:
+      8px 8px 18px var(--dark),
+      -8px -8px 18px var(--light);
+  }
+
+  #suggestions div{
+    padding:9px 12px;
+    cursor:pointer;
+  }
+
+  #suggestions div:hover{
+    background:#eef1f8;
+  }
+
+  /* LOGIN */
+  #loginBox{
+    max-width:380px;
+    margin:120px auto;
+    padding:30px;
+    border-radius:18px;
+    background:var(--bg);
+    box-shadow:
+      8px 8px 18px var(--dark),
+      -8px -8px 18px var(--light);
+  }
+
+  #loginBox button{
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:14px;
+    background:var(--primary);
+    color:#fff;
+    font-size:14px;
+    cursor:pointer;
+  }
+
+  #error{
+    color:#c0392b;
+    text-align:center;
+    margin-top:10px;
+    display:none;
+  }
+
+  #mainContent{
+    display:none;
+  }
+</style>
+</head>
+
+<body oncontextmenu="return false">
+
+<!-- LOGIN -->
+<div id="loginBox">
+  <h2>Authorized Login</h2>
+  <input type="text" id="username" placeholder="Username">
+  <input type="password" id="password" placeholder="Password">
+  <button onclick="login()">Login</button>
+  <div id="error">Invalid login credentials</div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div id="mainContent">
+
+<h2>PEEF Recommended Students List for 2012–2025</h2>
+
+<input type="text" id="searchInput" placeholder="Type student name or father name here...">
+<div id="suggestions"></div>
+
+<table id="dataTable">
+  <thead>
+    <tr>
+      <th>S.No.</th>
+      <th>Name</th>
+      <th>Gender</th>
+      <th>Father Name</th>
+      <th>Address</th>
+      <th>Region</th>
+      <th>Year</th>
+      <th>Student Contact</th>
+      <th>Father Contact</th>
+      <th>Institute Name</th>
+      <th>Institution Contact</th>
+    </tr>
+  </thead>
+  <tbody id="tableBody"></tbody>
+</table>
+
+</div>
+
+<script>
+/* SIMPLE FRONT-END LOGIN (CHANGE CREDENTIALS HERE) */
+const VALID_USER = "irfanshah";
+const VALID_PASS = "irfanshah";
+
+if (sessionStorage.getItem("loggedIn") === "true") {
+  showApp();
+}
+
+function login(){
+  const u = document.getElementById("username").value.trim();
+  const p = document.getElementById("password").value.trim();
+
+  if (u === VALID_USER && p === VALID_PASS) {
+    sessionStorage.setItem("loggedIn","true");
+    showApp();
+  } else {
+    document.getElementById("error").style.display = "block";
+  }
+}
+
+function showApp(){
+  document.getElementById("loginBox").style.display = "none";
+  document.getElementById("mainContent").style.display = "block";
+}
+
+/* DATA LOADING */
+let data = [];
+
+fetch('data.csv')
+  .then(response => response.text())
+  .then(text => {
+    const lines = text.trim().split('\n');
+
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i]
+        .split(',')
+        .map(v => v.trim())
+        .filter(v => v !== '');
+
+      if (cols.length < 11) continue;
+
+      const [
+        serial,
+        name,
+        gender,
+        fatherName,
+        address,
+        region,
+        year,
+        studentContact,
+        fatherContact,
+        instituteName,
+        institutionContact
+      ] = cols;
+
+      data.push({
+        serial,
+        name,
+        gender,
+        fatherName,
+        address,
+        region,
+        year,
+        studentContact,
+        fatherContact,
+        instituteName,
+        institutionContact
+      });
+    }
+  });
+
+const searchInput = document.getElementById('searchInput');
+const suggestions = document.getElementById('suggestions');
+const table = document.getElementById('dataTable');
+const tableBody = document.getElementById('tableBody');
+
+searchInput.addEventListener('input', function () {
+  const query = this.value.toLowerCase().trim();
+  suggestions.innerHTML = '';
+
+  if (!query) {
+    suggestions.style.display = 'none';
+    table.style.display = 'none';
+    return;
+  }
+
+  const matches = data.filter(item =>
+    item.name.toLowerCase().includes(query) ||
+    item.fatherName.toLowerCase().includes(query)
+  );
+
+  if (!matches.length) {
+    suggestions.style.display = 'none';
+    table.style.display = 'none';
+    return;
+  }
+
+  matches.slice(0, 8).forEach(item => {
+    const div = document.createElement('div');
+    div.textContent = `${item.name} (Father: ${item.fatherName})`;
+    div.onclick = () => showRecord(item);
+    suggestions.appendChild(div);
+  });
+
+  suggestions.style.display = 'block';
+});
+
+function showRecord(item) {
+  suggestions.style.display = 'none';
+  searchInput.value = item.name;
+
+  tableBody.innerHTML = `
+    <tr>
+      <td>${item.serial}</td>
+      <td>${item.name}</td>
+      <td>${item.gender}</td>
+      <td>${item.fatherName}</td>
+      <td>${item.address}</td>
+      <td>${item.region}</td>
+      <td>${item.year}</td>
+      <td>${item.studentContact}</td>
+      <td>${item.fatherContact}</td>
+      <td>${item.instituteName}</td>
+      <td>${item.institutionContact}</td>
+    </tr>
+  `;
+
+  table.style.display = 'table';
+}
+
+document.addEventListener('copy', e => e.preventDefault());
+document.addEventListener('selectstart', e => e.preventDefault());
+</script>
+
+</body>
+</html>
