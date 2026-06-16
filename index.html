@@ -391,7 +391,7 @@ searchInput.addEventListener('input', function () {
         const div = document.createElement('div');
 
         div.textContent =
-    `${item.name} (Father: ${item.fatherName})`;
+    `${item.name} (Father: ${item.fatherName}) - ${item.studentContact}`;
 
         div.onclick = () => showRecord(item);
 
