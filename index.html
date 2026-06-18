@@ -305,9 +305,13 @@ fetch('data.csv')
 .then(response => response.text())
 .then(text => {
 
-    const lines = text.trim().split('\n');
+    text = text.replace(/^\uFEFF/, '');
+
+    const lines = text.trim().split(/\r?\n/);
 
     for (let i = 1; i < lines.length; i++) {
+
+        if (!lines[i].trim()) continue;
 
         const cols = lines[i]
             .split(',')
@@ -315,38 +319,27 @@ fetch('data.csv')
 
         if (cols.length < 11) continue;
 
-        const [
-            serial,
-            name,
-            gender,
-            fatherName,
-            address,
-            region,
-            year,
-            studentContact,
-            fatherContact,
-            instituteName,
-            institutionContact
-        ] = cols;
-
         data.push({
-            serial,
-            name,
-            gender,
-            fatherName,
-            address,
-            region,
-            year,
-            studentContact,
-            fatherContact,
-            instituteName,
-            institutionContact
+
+            serial: cols[0] || '',
+            name: cols[1] || '',
+            gender: cols[2] || '',
+            fatherName: cols[3] || '',
+            address: cols[4] || '',
+            region: cols[5] || '',
+            year: cols[6] || '',
+            studentContact: cols[7] || '',
+            fatherContact: cols[8] || '',
+            instituteName: cols[9] || '',
+            institutionContact: cols[10] || ''
+
         });
 
     }
 
-});
+    console.log("Records Loaded:", data.length);
 
+});
 /* SEARCH */
 
 searchInput.addEventListener('input', function () {
