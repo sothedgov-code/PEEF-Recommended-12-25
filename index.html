@@ -213,10 +213,6 @@ button:hover{
         Print Selected Students
     </button>
 
-    <button onclick="downloadVCF()">
-        Download VCF
-    </button>
-
     <button onclick="clearPrintList()">
         Clear List
     </button>
@@ -672,75 +668,6 @@ function openPrintPage() {
     printWindow.document.write(html);
 
     printWindow.document.close();
-}
-
-    function downloadVCF() {
-
-    if (selectedStudents.length === 0) {
-        alert("No students selected.");
-        return;
-    }
-
-    let vcfContent = "";
-
-    let contactCounter = 1;
-
-selectedStudents.forEach(student => {
-
-    let phone = (student.studentContact || "").trim();
-
-    if (!phone) {
-        phone = (student.fatherContact || "").trim();
-    }
-
-    if (!phone) return;
-
-    phone = phone.replace(/[^\d+]/g, '');
-
-    const serial = String(contactCounter++).padStart(3, '0');
-
-    vcfContent += `BEGIN:VCARD
-VERSION:3.0
-FN:PEEF-${serial} - ${student.name}
-TEL;TYPE=CELL:${phone}
-END:VCARD
-
-`;
-});
-    if (!vcfContent.trim()) {
-        alert("No contact numbers available.");
-        return;
-    }
-
-    const blob = new Blob(
-        [vcfContent],
-        { type: 'text/vcard;charset=utf-8' }
-    );
-
-    const link = document.createElement('a');
-
-    link.href = URL.createObjectURL(blob);
-
-    const today = new Date();
-
-    const fileName =
-        "PEEF_Group_" +
-        today.getFullYear() +
-        "-" +
-        String(today.getMonth()+1).padStart(2,'0') +
-        "-" +
-        String(today.getDate()).padStart(2,'0') +
-        ".vcf";
-
-    link.download = fileName;
-
-    document.body.appendChild(link);
-
-    link.click();
-
-    document.body.removeChild(link);
-
-    URL.revokeObjectURL(link.href);
 }
 
 /* CLEAR LIST */
