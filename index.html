@@ -690,70 +690,120 @@ function openPrintPage() {
         return;
     }
 
-    let vcfContent = "";
+    let studentVCF = "";
+    let instituteVCF = "";
 
-    let contactCounter = 1;
+    let studentCounter = 1;
+    let instituteCounter = 1;
+const instituteNumbers = new Set();
 
-selectedStudents.forEach(student => {
+    selectedStudents.forEach(student => {
 
-    let phone = (student.studentContact || "").trim();
+        /* ---------- Student/Father Contact ---------- */
 
-    if (!phone) {
-        phone = (student.fatherContact || "").trim();
-    }
+        let phone = (student.studentContact || "").trim();
 
-    if (!phone) return;
+        if (!phone) {
+            phone = (student.fatherContact || "").trim();
+        }
 
-    phone = phone.replace(/[^\d+]/g, '');
+        phone = phone.replace(/[^\d+]/g, '');
 
-if (phone === "" || phone === "+") {
-    return;
-}
+        if (phone) {
 
-    const serial = String(contactCounter++).padStart(3, '0');
+            const serial = String(studentCounter++).padStart(3, '0');
 
-    vcfContent += `BEGIN:VCARD
+            studentVCF += `BEGIN:VCARD
 VERSION:3.0
 FN:PEEF-${serial} - ${student.name}
 TEL;TYPE=CELL:${phone}
 END:VCARD
 
 `;
-});
-    if (!vcfContent.trim()) {
-        alert("No contact numbers available.");
-        return;
-    }
+        }
 
-    const blob = new Blob(
-        [vcfContent],
-        { type: 'text/vcard;charset=utf-8' }
-    );
+        /* ---------- Institute Contact ---------- */
 
-    const link = document.createElement('a');
+        let institutePhone = (student.institutionContact || "").trim();
 
-    link.href = URL.createObjectURL(blob);
+        institutePhone = institutePhone.replace(/[^\d+]/g, '');
+
+        if (institutePhone && !instituteNumbers.has(institutePhone)) {
+
+    instituteNumbers.add(institutePhone);
+
+    const serial = String(instituteCounter++).padStart(3, '0');
+
+    instituteVCF += `BEGIN:VCARD
+VERSION:3.0
+FN:PEEF-INS-${serial} - ${student.instituteName}
+TEL;TYPE=WORK:${institutePhone}
+END:VCARD
+
+`;
+}
+
+    });
 
     const today = new Date();
 
-    const fileName =
-        "PEEF_Group_" +
-        today.getFullYear() +
-        "-" +
-        String(today.getMonth()+1).padStart(2,'0') +
-        "-" +
-        String(today.getDate()).padStart(2,'0') +
-        ".vcf";
+    const date =
+        today.getFullYear() + "-" +
+        String(today.getMonth() + 1).padStart(2, '0') + "-" +
+        String(today.getDate()).padStart(2, '0');
 
-    link.download = fileName;
+    /* ---------- Download Student Contacts ---------- */
 
-    document.body.appendChild(link);
+    if (studentVCF.trim()) {
 
-    link.click();
+        const blob = new Blob(
+            [studentVCF],
+            { type: 'text/vcard;charset=utf-8' }
+        );
 
-    document.body.removeChild(link);
+        const link = document.createElement('a');
 
-    URL.revokeObjectURL(link.href);
+        link.href = URL.createObjectURL(blob);
+
+        link.download = "PEEF_Students_" + date + ".vcf";
+
+        document.body.appendChild(link);
+
+        link.click();
+
+        document.body.removeChild(link);
+
+        URL.revokeObjectURL(link.href);
+
+    }
+
+    /* ---------- Download Institute Contacts ---------- */
+
+    if (instituteVCF.trim()) {
+
+        const blob = new Blob(
+            [instituteVCF],
+            { type: 'text/vcard;charset=utf-8' }
+        );
+
+        const link = document.createElement('a');
+
+        link.href = URL.createObjectURL(blob);
+
+        link.download = "PEEF_Institutes_" + date + ".vcf";
+
+        document.body.appendChild(link);
+
+        link.click();
+
+        document.body.removeChild(link);
+
+        URL.revokeObjectURL(link.href);
+
+    }
+
+    alert("Student and Institute VCF files downloaded successfully.");
+
 }
 
 /* CLEAR LIST */
