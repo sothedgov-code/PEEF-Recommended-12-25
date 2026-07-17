@@ -325,23 +325,26 @@ fetch('data.csv')
 
         const cols = lines[i]
             .split(',')
-            .map(v => v.trim());
+            .map(v => v.trim())
+            .slice(0,11);
 
-        if (cols.length < 11) continue;
+        while (cols.length < 11) {
+            cols.push("");
+        }
 
         data.push({
 
-            serial: cols[0] || '',
-            name: cols[1] || '',
-            gender: cols[2] || '',
-            fatherName: cols[3] || '',
-            address: cols[4] || '',
-            region: cols[5] || '',
-            year: cols[6] || '',
-            studentContact: cols[7] || '',
-            fatherContact: cols[8] || '',
-            instituteName: cols[9] || '',
-            institutionContact: cols[10] || ''
+            serial: cols[0],
+            name: cols[1],
+            gender: cols[2],
+            fatherName: cols[3],
+            address: cols[4],
+            region: cols[5],
+            year: cols[6],
+            studentContact: cols[7],
+            fatherContact: cols[8],
+            instituteName: cols[9],
+            institutionContact: cols[10]
 
         });
 
@@ -521,11 +524,13 @@ function addToPrintList() {
 
     }
 
-    const exists = selectedStudents.some(
+    const exists = selectedStudents.some(s =>
 
-        s => s.serial === currentStudent.serial
+    s.name === currentStudent.name &&
+    s.fatherName === currentStudent.fatherName &&
+    s.studentContact === currentStudent.studentContact
 
-    );
+);
 
     if (exists) {
 
@@ -549,6 +554,10 @@ function addToPrintList() {
 searchInput.value = "";
 searchInput.style.background = "";
 currentStudent = null;
+
+tableBody.innerHTML = "";
+table.style.display = "none";
+
 document.getElementById("addBtn").style.display = "none";
 }
 
@@ -696,6 +705,10 @@ selectedStudents.forEach(student => {
     if (!phone) return;
 
     phone = phone.replace(/[^\d+]/g, '');
+
+if (phone === "" || phone === "+") {
+    return;
+}
 
     const serial = String(contactCounter++).padStart(3, '0');
 
