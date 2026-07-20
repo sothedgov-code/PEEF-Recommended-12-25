@@ -382,37 +382,29 @@ fetch('data.csv')
 
   /* SESSION DROPDOWN */
 
+/* AWARD YEAR DROPDOWN */
+
 function loadSessions() {
 
     const sessionSelect = document.getElementById("sessionYear");
 
+    // Clear all existing options
     sessionSelect.innerHTML =
         '<option value="">Select Award Year</option>';
 
-    const sessions = [...new Set(
+    // Add Award Years from 2030 down to 2000
+    for (let year = 2030; year >= 2000; year--) {
 
-        data
-        .map(item => (item.year || "").trim())
-        .filter(item => item !== "")
+        const option = document.createElement("option");
 
-    )];
-
-    // Latest year first
-    sessions.sort((a,b)=>Number(b)-Number(a));
-
-    sessions.forEach(session=>{
-
-        const option=document.createElement("option");
-
-        option.value=session;
-        option.textContent=session;
+        option.value = year.toString();
+        option.textContent = year.toString();
 
         sessionSelect.appendChild(option);
 
-    });
+    }
 
 }
-
 
 /* NORMALIZE PAKISTAN PHONE NUMBER */
 
