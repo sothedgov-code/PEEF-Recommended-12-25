@@ -203,7 +203,33 @@ button:hover{
 <input type="text" id="searchInput" placeholder="Search by Name, Father Name or Mobile Number...">
 
 <div id="suggestions"></div>
+  <div style="text-align:center;margin-bottom:15px;">
 
+    <select id="sessionYear"
+        style="
+        width:220px;
+        padding:10px;
+        border-radius:10px;
+        margin-right:10px;">
+
+        <option value="">Select Award Year</option>
+
+    </select>
+
+    <input
+    type="number"
+    id="startNumber"
+    placeholder="Start No."
+    style="
+    width:130px;
+    display:inline-block;
+    margin-right:10px;">
+
+    <button onclick="downloadSessionVCF()">
+        Create Student VCF
+    </button>
+
+</div>
 <div style="text-align:center;margin-bottom:15px;">
     <button onclick="addToPrintList()" id="addBtn" style="display:none;">
         Add To Print List
@@ -351,10 +377,86 @@ fetch('data.csv')
     }
 
     console.log("Records Loaded:", data.length);
-
+    loadSessions();
 });
-/* SEARCH */
 
+  /* SESSION DROPDOWN */
+
+function loadSessions() {
+
+    const sessionSelect = document.getElementById("sessionYear");
+
+    sessionSelect.innerHTML =
+        '<option value="">Select Award Year</option>';
+
+    const sessions = [...new Set(
+
+        data
+        .map(item => (item.year || "").trim())
+        .filter(item => item !== "")
+
+    )];
+
+    // Latest year first
+    sessions.sort((a,b)=>Number(b)-Number(a));
+
+    sessions.forEach(session=>{
+
+        const option=document.createElement("option");
+
+        option.value=session;
+        option.textContent=session;
+
+        sessionSelect.appendChild(option);
+
+    });
+
+}
+
+
+/* NORMALIZE PAKISTAN PHONE NUMBER */
+
+function normalizePhone(phone){
+
+    phone = (phone || "").trim();
+
+    // Remove spaces, dashes, brackets, etc.
+    phone = phone.replace(/[^\d+]/g,"");
+
+    if(phone.startsWith("+92")){
+
+        phone = "+92" + phone.substring(3);
+
+    }
+
+    else if(phone.startsWith("92")){
+
+        phone = "+92" + phone.substring(2);
+
+    }
+
+    else if(phone.startsWith("03")){
+
+        phone = "+92" + phone.substring(1);
+
+    }
+
+    else if(phone.startsWith("3")){
+
+        phone = "+92" + phone;
+
+    }
+
+    // Mobile number should be +92 followed by 10 digits
+    if(!/^\+923\d{9}$/.test(phone)){
+
+        return "";
+
+    }
+
+    return phone;
+
+}
 /* SEARCH */
 
 searchInput.addEventListener('input', function () {
@@ -707,7 +809,7 @@ const instituteNumbers = new Set();
             phone = (student.fatherContact || "").trim();
         }
 
-        phone = phone.replace(/[^\d+]/g, '');
+        phone = normalizePhone(phone);
 
         if (phone) {
 
@@ -726,7 +828,7 @@ END:VCARD
 
         let institutePhone = (student.institutionContact || "").trim();
 
-        institutePhone = institutePhone.replace(/[^\d+]/g, '');
+        institutePhone = normalizePhone(institutePhone);
 
         if (institutePhone && !instituteNumbers.has(institutePhone)) {
 
@@ -806,6 +908,131 @@ END:VCARD
 
 }
 
+  function downloadSessionVCF() {
+
+    const awardYear = document.getElementById("sessionYear").value;
+
+    if (!awardYear) {
+        alert("Please select an Award Year.");
+        return;
+    }
+
+    let counter =
+        parseInt(document.getElementById("startNumber").value) || 1;
+
+    const students = data.filter(student =>
+        (student.year || "").trim() === awardYear
+    );
+
+    if (students.length === 0) {
+        alert("No students found for Award Year " + awardYear);
+        return;
+    }
+
+    let vcf = "";
+
+    // Store exported phone numbers to remove duplicates
+    const usedNumbers = new Set();
+
+    let totalStudents = students.length;
+    let exported = 0;
+    let parentUsed = 0;
+    let duplicates = 0;
+    let noContact = 0;
+
+    students.forEach(student => {
+
+        // Prefer Student Contact
+        let phone = (student.studentContact || "").trim();
+
+        let usedParent = false;
+
+        // If Student Contact is blank, use Father Contact
+        if (!phone) {
+            phone = (student.fatherContact || "").trim();
+            usedParent = true;
+        }
+
+        // Remove spaces, dashes and other unwanted characters
+        phone = normalizePhone(phone);
+
+        // Skip if no number
+        if (!phone) {
+            noContact++;
+            return;
+        }
+
+        // Skip duplicate numbers
+        if (usedNumbers.has(phone)) {
+            duplicates++;
+            return;
+        }
+
+        usedNumbers.add(phone);
+
+        if (usedParent) {
+            parentUsed++;
+        }
+
+        // Create 4-digit serial number
+        const serial = String(counter).padStart(4, "0");
+
+        vcf += `BEGIN:VCARD
+VERSION:3.0
+FN:Student-${serial}-${awardYear}
+TEL;TYPE=CELL:${phone}
+END:VCARD
+
+`;
+
+        counter++;
+exported++;
+
+    });
+
+    localStorage.setItem("LastStudentNumber", counter);
+    document.getElementById("startNumber").value = counter;
+    if (!vcf.trim()) {
+        alert("No valid contacts found.");
+        return;
+    }
+
+    const blob = new Blob(
+        [vcf],
+        { type: "text/vcard;charset=utf-8" }
+    );
+
+    const link = document.createElement("a");
+
+    link.href = URL.createObjectURL(blob);
+
+    link.download = `Students-${awardYear}.vcf`;
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(link.href);
+
+    alert(
+`VCF Created Successfully
+
+Award Year : ${awardYear}
+
+Students Found : ${totalStudents}
+
+Contacts Exported : ${exported}
+
+Parent Numbers Used : ${parentUsed}
+
+Duplicate Numbers Skipped : ${duplicates}
+
+Students Without Contact : ${noContact}`
+    );
+
+}
 /* CLEAR LIST */
 
 function clearPrintList() {
@@ -826,6 +1053,11 @@ function clearPrintList() {
 /* INITIALIZE */
 
 updateCounter();
+
+const lastNumber =
+    parseInt(localStorage.getItem("LastStudentNumber")) || 1;
+
+document.getElementById("startNumber").value = lastNumber;
 document.addEventListener("click", function(e){
 
     if(
